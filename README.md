@@ -1,74 +1,58 @@
-﻿# Hill Climb Racing Gesture Control
+# 🎮 Hill Climb Racing Gesture Control
 
-A computer vision project that allows you to control the game Hill Climb Racing using hand gestures captured via a webcam. This project uses MediaPipe for hand tracking and gesture recognition, enabling intuitive control of the game and even mouse cursor functionality.
+👋 Control the classic game Hill Climb Racing and even your mouse cursor using just your hands! This innovative project leverages the power of computer vision and hand tracking to bring you a unique and intuitive control experience. Using your webcam, it recognizes your gestures in real-time, translating them into game actions and mouse movements.
 
-Features
-Game Control:
-Accelerate: Close your right hand into a fist.
-Brake: Close your left hand into a fist.
-Mouse Control:
-Move the cursor using your left hand's index finger.
-Perform a left click by pinching your thumb and index finger.
-Perform a right-click by pinching your thumb and middle finger.
-Game Mode Toggle:
-Switch between game control mode and cursor control mode by pressing the M key.
-Visual Feedback:
-Displays hand landmarks and gestures in real-time on the webcam feed.
-Shows the current mode (Game Mode or Cursor Mode) on the screen.
+✨ **Features** ✨
 
-Requirements
-Libraries
-Install the required Python libraries using pip: 
-pip install opencv-python mediapipe pynput pyautogui
+* **🚗 Game Control:**
+    * 💨 **Accelerate:** Make a fist with your **right** hand.
+    * 🛑 **Brake:** Make a fist with your **left** hand.
+* 🖱️ **Mouse Control:**
+    * 👆 **Move Cursor:** Gently move your **left** hand's index finger.
+    * 🖱️ **Left Click:** Pinch your **thumb** and **index** finger together.
+    * ➡️ **Right Click:** Pinch your **thumb** and **middle** finger together.
+* 🕹️ **Game Mode Toggle:** Press the `M` key on your keyboard to seamlessly switch between controlling the game and controlling your mouse cursor.
+* 👁️ **Visual Feedback:** See your hand landmarks and recognized gestures overlaid on the live webcam feed. The current mode (Game Mode or Cursor Mode) is also displayed on the screen for clear indication.
 
-Hardware
-A webcam for capturing hand gestures.
-A Windows machine (for directkeys.py to simulate keyboard inputs).
+**⚙️ Requirements**
 
-How to Run
-Clone the repository: git clone https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing.git
-cd Gesture-Control-Hill-Climb-Racing
-Run the main script:
-python main.py
+* **Libraries:**
+    ```bash
+    pip install opencv-python mediapipe pynput pyautogui
+    ```
+* **Hardware:**
+    * A standard webcam to capture your hand movements.
+    * A Windows operating system (required for the `directkeys.py` script which utilizes the Windows API for direct keyboard input simulation).
 
-Position your webcam to capture your hands.
+**🚀 How to Run**
 
-Game Mode:
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing.git](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing.git)
+    ```
+2.  **Navigate to the Project Directory:**
+    ```bash
+    cd Gesture-Control-Hill-Climb-Racing
+    ```
+3.  **Run the Main Script:**
+    ```bash
+    python main.py
+    ```
+4.  **Position your webcam** so that it clearly captures your hands.
 
-Close your right hand into a fist to accelerate.
-Close your left hand into a fist to brake.
-Cursor Mode:
+**🕹️ Usage**
 
-Move the cursor using your left hand's index finger.
-Pinch gestures for left-click (thumb + index) and right-click (thumb + middle).
-Press M to toggle between Game Mode and Cursor Mode.
+* **Game Mode:**
+    * ✊ Close your **right hand** into a fist to **accelerate** your vehicle.
+    * ✊ Close your **left hand** into a fist to engage the **brakes**.
+* **Cursor Mode:**
+    * ☝️ Move your **left hand's index finger** to move the mouse cursor on the screen.
+    * 🤏 Pinch your **thumb and index finger** together to perform a **left-click**.
+    * 🤏 Pinch your **thumb and middle finger** together to perform a **right-click**.
+* **Toggle Mode:** Press the `M` key on your keyboard to switch between **Game Mode** and **Cursor Mode**.
+* **Quit:** Press the `Q` key to exit the program.
 
-Press Q to quit the program.
-
-File Structure
-main.py: The primary script with advanced features like game mode toggle and cursor control.
-main2.py: A simpler version focused only on game control.
-directkeys.py: Handles low-level keyboard input simulation using Windows API.
-Future Improvements
-Add support for more games with customizable profiles.
-Implement hand rotation for steering in racing games.
-Add voice commands for mode switching.
-Extend compatibility to macOS and Linux.
-Improve gesture recognition using machine learning.
-
-License
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-Acknowledgments
-MediaPipe: For hand tracking and gesture recognition.
-OpenCV: For video processing.
-pynput: For keyboard and mouse control.
-pyautogui: For screen size mapping and cursor control.
-
-
-
-
-
+**📂 File Structure**
 
 
 
