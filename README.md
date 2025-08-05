@@ -1,60 +1,46 @@
-# 🎮 Hill Climb Racing Gesture Control
+# 🚗💨 Gesture-Control Hill Climb Racing 👋👾
 
-👋 Control the classic game Hill Climb Racing and even your mouse cursor using just your hands! This innovative project leverages the power of computer vision and hand tracking to bring you a unique and intuitive control experience. Using your webcam, it recognizes your gestures in real-time, translating them into game actions and mouse movements.
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://www.python.org/)
+[![Gesture Control](https://img.shields.io/badge/Gesture%20Control-Enabled-orange?logo=handshake)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing)
+[![Game](https://img.shields.io/badge/Game-Hill%20Climb%20Racing-green?logo=gamepad)]()
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?logo=github)]()
+[![Stars](https://img.shields.io/github/stars/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing?style=social)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing/stargazers)
+[![Forks](https://img.shields.io/github/forks/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing?style=social)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing/forks)
+[![Issues](https://img.shields.io/github/issues/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing?color=red)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing?color=blue)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing/pulls)
+[![Last Commit](https://img.shields.io/github/last-commit/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing?color=purple)](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing/commits/main)
+> 🚗💨 Experience Hill Climb Racing with our innovative hand gesture control system. Move your hand to accelerate, brake, and tilt, bringing a whole new level of fun and interactivity to your gameplay. 👋👾
 
-✨ **Features** ✨
+---
 
-* **🚗 Game Control:**
-    * 💨 **Accelerate:** Make a fist with your **right** hand.
-    * 🛑 **Brake:** Make a fist with your **left** hand.
-* 🖱️ **Mouse Control:**
-    * 👆 **Move Cursor:** Gently move your **left** hand's index finger.
-    * 🖱️ **Left Click:** Pinch your **thumb** and **index** finger together.
-    * ➡️ **Right Click:** Pinch your **thumb** and **middle** finger together.
-* 🕹️ **Game Mode Toggle:** Press the `M` key on your keyboard to seamlessly switch between controlling the game and controlling your mouse cursor.
-* 👁️ **Visual Feedback:** See your hand landmarks and recognized gestures overlaid on the live webcam feed. The current mode (Game Mode or Cursor Mode) is also displayed on the screen for clear indication.
+## ✨ Features
 
-**⚙️ Requirements**
+- **🕹 Game Control:**
+  - 💨 **Accelerate:** Make a fist with your **right** hand.
+  - 🛑 **Brake:** Make a fist with your **left** hand.
+- **🖱️ Mouse Control:**
+  - 👆 **Move Cursor:** Move your **left hand's index finger**.
+  - 🖱️ **Left Click:** Pinch your **thumb** and **index** finger together.
+  - ➡️ **Right Click:** Pinch your **thumb** and **middle** finger together.
+- **🔄 Game Mode Toggle:** Press `M` to switch between game and cursor modes.
+- **👁️ Visual Feedback:** See hand landmarks and recognized gestures overlaid on the webcam feed. Mode status (Game Mode or Cursor Mode) is displayed for clarity.
 
-* **Libraries:**
-    ```bash
-    pip install opencv-python mediapipe pynput pyautogui
-    ```
-* **Hardware:**
-    * A standard webcam to capture your hand movements.
-    * A Windows operating system (required for the `directkeys.py` script which utilizes the Windows API for direct keyboard input simulation).
+---
 
-**🚀 How to Run**
+## ⚙️ Requirements
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone [https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing.git](https://github.com/jhaabhijeet864/Gesture-Control-Hill-Climb-Racing.git)
-    ```
-2.  **Navigate to the Project Directory:**
-    ```bash
-    cd Gesture-Control-Hill-Climb-Racing
-    ```
-3.  **Run the Main Script:**
-    ```bash
-    python main.py
-    ```
-4.  **Position your webcam** so that it clearly captures your hands.
+- **Libraries:**
+  ```bash
+  pip install opencv-python mediapipe pynput pyautogui
+  ```
+- **Hardware:**
+  - Standard webcam
+  - Windows OS (required for direct keyboard input simulation)
 
-**🕹️ Usage**
+---
 
-* **Game Mode:**
-    * ✊ Close your **right hand** into a fist to **accelerate** your vehicle.
-    * ✊ Close your **left hand** into a fist to engage the **brakes**.
-* **Cursor Mode:**
-    * ☝️ Move your **left hand's index finger** to move the mouse cursor on the screen.
-    * 🤏 Pinch your **thumb and index finger** together to perform a **left-click**.
-    * 🤏 Pinch your **thumb and middle finger** together to perform a **right-click**.
-* **Toggle Mode:** Press the `M` key on your keyboard to switch between **Game Mode** and **Cursor Mode**.
-* **Quit:** Press the `Q` key to exit the program.
+## 🚀 How to Run
 
-**📂 File Structure**
-
-
-
-
-
+1. **Clone the Repository:**
+   ```bash
