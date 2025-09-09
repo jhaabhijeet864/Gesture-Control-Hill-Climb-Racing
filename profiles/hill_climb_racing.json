@@ -1,0 +1,38 @@
+{
+  "name": "hill_climb_racing",
+  "description": "Optimized profile for Hill Climb Racing game",
+  "target_application": "Hill Climb Racing",
+  "version": "1.0",
+  "settings": {
+    "smoothing": 8,
+    "confidence_threshold": 0.7,
+    "gesture_cooldown": 0.1,
+    "exclusive_gestures": true
+  },
+  "mappings": [
+    {
+      "gesture": "fist_right",
+      "action_type": "key",
+      "action_params": {
+        "key": "right",
+        "press_type": "hold"
+      },
+      "conditions": {
+        "confidence": 0.8,
+        "hand": "right"
+      }
+    },
+    {
+      "gesture": "fist_left",
+      "action_type": "key",
+      "action_params": {
+        "key": "left",
+        "press_type": "hold"
+      },
+      "conditions": {
+        "confidence": 0.8,
+        "hand": "left"
+      }
+    }
+  ]
+}

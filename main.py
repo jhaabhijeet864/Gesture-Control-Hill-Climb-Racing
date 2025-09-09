@@ -12,6 +12,7 @@ from config_utils import load_config, save_config, key_from_name, CONFIG_PATH
 from capture import VideoCapture
 from inference import HandInference
 from overlay import draw_hud, draw_status, draw_calibration_panel
+from plugins.plugin_manager import PluginManager
 
 
 # Setup logging
@@ -36,20 +37,26 @@ def measure_thumb_index_distance(hand_landmarks, mp_hands):
 
 def main():
     """Main orchestrator: capture → inference → gesture classification → mapping → actuation → overlay."""
-    cfg = load_config()
-
-    # Actuation layer
+    
+    # Initialize plugin system
+    log.info("Initializing Game Glide with plugin system...")
+    plugin_manager = PluginManager("config.yaml")
+    
+    # Get configuration from plugin system
+    config = plugin_manager.config
+    
+    # Legacy compatibility - still support old direct controls
     keyboard = KeyboardController()
     mouse = MouseController()
-    GAS_KEY = key_from_name(cfg["keys"].get("gas"))
-    BRAKE_KEY = key_from_name(cfg["keys"].get("brake"))
+    GAS_KEY = key_from_name(config.get_config("keys.gas", "right"))
+    BRAKE_KEY = key_from_name(config.get_config("keys.brake", "left"))
     screen_width, screen_height = pyautogui.size()
 
     # Inference layer
     infer = HandInference(
-        min_detection_confidence=cfg["min_detection_confidence"],
-        min_tracking_confidence=cfg["min_tracking_confidence"],
-        max_num_hands=cfg["max_num_hands"],
+        min_detection_confidence=config.get_config("detection.min_detection_confidence", 0.7),
+        min_tracking_confidence=config.get_config("detection.min_tracking_confidence", 0.7),
+        max_num_hands=config.get_config("detection.max_num_hands", 2),
     )
     mp_hands = infer.mp_hands
 
@@ -57,18 +64,18 @@ def main():
     vc = VideoCapture(0)
     frame_width, frame_height = vc.get_size()
 
-    # Tracking & mapping state
-    smoothing = int(cfg["smoothing"])
+    # Legacy tracking & mapping state (for backward compatibility)
+    smoothing = int(config.get_config("ui.smoothing", 8))
     game_mode = True
     is_gas_pressed = False
     is_brake_pressed = False
     prev_cursor_x, prev_cursor_y = 0, 0
     
-    # Gesture classification
+    # Legacy gesture classification (fallback)
     clicker = ClickDetector(
-        pinch_threshold=cfg["pinch_threshold"],
-        ready_threshold=cfg["ready_threshold"],
-        cooldown_frames=cfg["click_cooldown_frames"],
+        pinch_threshold=config.get_config("gestures.pinch_threshold", 0.05),
+        ready_threshold=config.get_config("gestures.ready_threshold", 0.1),
+        cooldown_frames=config.get_config("gestures.click_cooldown_frames", 5),
     )
 
     # UI overlay state
@@ -77,8 +84,15 @@ def main():
     calibration_mode = False
     calib_closed = None
     calib_open = None
+    
+    # Plugin system mode toggle
+    use_plugin_system = True
+    
+    # Show plugin system status
+    status = plugin_manager.get_status()
+    log.info(f"Plugin System Status: {status}")
 
-    log.info("Starting capture. Press 'q' to quit, 'm' to toggle mode, 'c' to calibrate.")
+    log.info("Starting capture. Press 'q' to quit, 'm' to toggle mode, 'c' to calibrate, 'p' to toggle plugin system.")
     
     try:
         while True:
@@ -102,8 +116,9 @@ def main():
             last_time = now
 
             # UI overlay - HUD
-            mode_text = "GAME MODE: Cursor OFF" if game_mode else "CURSOR MODE: Cursor ON"
-            mode_color = (0, 0, 255) if game_mode else (0, 255, 0)
+            mode_indicator = "PLUGIN" if use_plugin_system else ("GAME" if game_mode else "CURSOR")
+            mode_text = f"{mode_indicator} MODE"
+            mode_color = (0, 255, 255) if use_plugin_system else ((0, 0, 255) if game_mode else (0, 255, 0))
             draw_hud(frame, mode_text, mode_color, fps, clicker.pinch_threshold, smoothing)
 
             # Tracking - hand assignment
@@ -123,60 +138,94 @@ def main():
                     else:
                         left_hand = lm
                     
-                    infer.draw(frame, lm)
+                    if config.get_config("ui.show_landmarks", True):
+                        infer.draw(frame, lm)
 
             status_text = ""
 
-            # Gesture classification & mapping - Right hand (Gas)
-            if right_hand:
-                if is_fist(right_hand):
-                    if not is_gas_pressed:
-                        # Actuation
-                        keyboard.press(GAS_KEY)
-                        is_gas_pressed = True
+            if use_plugin_system:
+                # NEW: Plugin system gesture processing
+                try:
+                    # Process gestures through plugin system
+                    gesture_results = plugin_manager.process_gestures(left_hand, right_hand, frame)
+                    
+                    # Execute actions based on detected gestures
+                    execution_results = plugin_manager.execute_gestures(gesture_results)
+                    
+                    # Update status text with plugin results
+                    active_gestures = []
+                    for gesture_name, result in execution_results.items():
+                        if result.get("success", False):
+                            action_type = result.get("action_type", "")
+                            confidence = result.get("confidence", 0)
+                            active_gestures.append(f"{gesture_name.replace('_left', '').replace('_right', '')} ({confidence:.2f})")
+                    
+                    if active_gestures:
+                        status_text = " | ".join(active_gestures)
+                    
+                    # Check for profile updates
+                    updated_profiles = plugin_manager.reload_profiles()
+                    if updated_profiles:
+                        log.info(f"Reloaded profiles: {updated_profiles}")
+                        
+                except Exception as e:
+                    log.error(f"Plugin system error: {e}")
+                    status_text = "Plugin Error"
+            
+            else:
+                # LEGACY: Original gesture processing for backward compatibility
+                # ... (existing gesture logic for fist detection and mouse control)
+                
+                # Gesture classification & mapping - Right hand (Gas)
+                if right_hand:
+                    if is_fist(right_hand):
+                        if not is_gas_pressed:
+                            # Actuation
+                            keyboard.press(GAS_KEY)
+                            is_gas_pressed = True
+                            if is_brake_pressed:
+                                keyboard.release(BRAKE_KEY)
+                                is_brake_pressed = False
+                        status_text = "Accelerator (Gas)"
+                    else:
+                        if is_gas_pressed:
+                            keyboard.release(GAS_KEY)
+                            is_gas_pressed = False
+
+                    if not game_mode:
+                        click_status, _ = clicker.detect_click(right_hand, frame, mouse, Button, game_mode)
+                        if click_status:
+                            status_text += (" | " if status_text else "") + click_status
+
+                # Gesture classification & mapping - Left hand (Brake + Cursor)
+                if left_hand:
+                    if is_fist(left_hand):
+                        if not is_brake_pressed:
+                            keyboard.press(BRAKE_KEY)
+                            is_brake_pressed = True
+                        status_text += (" | " if status_text else "") + "Brake"
+                    else:
                         if is_brake_pressed:
                             keyboard.release(BRAKE_KEY)
                             is_brake_pressed = False
-                    status_text = "Accelerator (Gas)"
-                else:
-                    if is_gas_pressed:
-                        keyboard.release(GAS_KEY)
-                        is_gas_pressed = False
 
-                if not game_mode:
-                    click_status, _ = clicker.detect_click(right_hand, frame, mouse, Button, game_mode)
-                    if click_status:
-                        status_text += (" | " if status_text else "") + click_status
-
-            # Gesture classification & mapping - Left hand (Brake + Cursor)
-            if left_hand:
-                if is_fist(left_hand):
-                    if not is_brake_pressed:
-                        keyboard.press(BRAKE_KEY)
-                        is_brake_pressed = True
-                    status_text += (" | " if status_text else "") + "Brake"
-                else:
-                    if is_brake_pressed:
-                        keyboard.release(BRAKE_KEY)
-                        is_brake_pressed = False
-
-                if not game_mode:
-                    # Tracking - cursor smoothing
-                    idx_tip = left_hand.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                    cx = int(idx_tip.x * screen_width)
-                    cy = int(idx_tip.y * screen_height)
-                    if prev_cursor_x == 0:
-                        prev_cursor_x, prev_cursor_y = cx, cy
-                    else:
-                        cx = prev_cursor_x + (cx - prev_cursor_x) // max(1, smoothing)
-                        cy = prev_cursor_y + (cy - prev_cursor_y) // max(1, smoothing)
-                        prev_cursor_x, prev_cursor_y = cx, cy
-                    
-                    # Actuation
-                    mouse.position = (cx, cy)
-                    click_status, _ = clicker.detect_click(left_hand, frame, mouse, Button, game_mode)
-                    if click_status:
-                        status_text += (" | " if status_text else "") + click_status
+                    if not game_mode:
+                        # Tracking - cursor smoothing
+                        idx_tip = left_hand.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                        cx = int(idx_tip.x * screen_width)
+                        cy = int(idx_tip.y * screen_height)
+                        if prev_cursor_x == 0:
+                            prev_cursor_x, prev_cursor_y = cx, cy
+                        else:
+                            cx = prev_cursor_x + (cx - prev_cursor_x) // max(1, smoothing)
+                            cy = prev_cursor_y + (cy - prev_cursor_y) // max(1, smoothing)
+                            prev_cursor_x, prev_cursor_y = cx, cy
+                        
+                        # Actuation
+                        mouse.position = (cx, cy)
+                        click_status, _ = clicker.detect_click(left_hand, frame, mouse, Button, game_mode)
+                        if click_status:
+                            status_text += (" | " if status_text else "") + click_status
 
             # UI overlay - calibration panel
             if calibration_mode:
@@ -191,14 +240,38 @@ def main():
 
             # UI overlay - status
             draw_status(frame, status_text, frame_height)
+            
+            # Show current profile in plugin mode
+            if use_plugin_system:
+                active_profile = plugin_manager.profile_manager.get_active_profile()
+                if active_profile:
+                    cv2.putText(frame, f"Profile: {active_profile.name}", (10, frame_height - 60), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
-            cv2.imshow("Hand Gesture Control", frame)
+            cv2.imshow("Game Glide - Hand Gesture Control", frame)
 
             # Input handling
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
-            if key == ord('m'):
+            if key == ord('p'):
+                use_plugin_system = not use_plugin_system
+                log.info("Plugin System %s", "Activated" if use_plugin_system else "Deactivated")
+                # Clean up legacy state when switching
+                if use_plugin_system:
+                    if is_gas_pressed:
+                        keyboard.release(GAS_KEY)
+                        is_gas_pressed = False
+                    if is_brake_pressed:
+                        keyboard.release(BRAKE_KEY)
+                        is_brake_pressed = False
+                    if clicker.is_left_clicking:
+                        mouse.release(Button.left)
+                        clicker.is_left_clicking = False
+                    if clicker.is_right_clicking:
+                        mouse.release(Button.right)
+                        clicker.is_right_clicking = False
+            if key == ord('m') and not use_plugin_system:
                 game_mode = not game_mode
                 log.info("Game Mode %s", "Activated" if game_mode else "Deactivated")
                 if game_mode:
@@ -227,28 +300,31 @@ def main():
                 if key == ord('s') and calib_closed and calib_open and calib_open > calib_closed:
                     new_thr = calib_closed + 0.35 * (calib_open - calib_closed)
                     clicker.set_thresholds(pinch_threshold=new_thr)
-                    cfg["pinch_threshold"] = new_thr
-                    save_config(cfg, CONFIG_PATH)
-                    log.info("Saved pinch_threshold=%.4f to %s", new_thr, CONFIG_PATH)
+                    config.set_config("gestures.pinch_threshold", new_thr)
+                    log.info("Saved pinch_threshold=%.4f", new_thr)
                     calibration_mode = False
                 if key == 27:  # ESC
                     calibration_mode = False
 
-            # Live tuning
-            if key == ord('['):
-                clicker.set_thresholds(pinch_threshold=max(0.005, clicker.pinch_threshold - 0.005))
-            if key == ord(']'):
-                clicker.set_thresholds(pinch_threshold=min(0.200, clicker.pinch_threshold + 0.005))
-            if key == ord('-'):
-                smoothing = max(1, smoothing - 1)
-            if key == ord('=') or key == ord('+'):
-                smoothing = min(32, smoothing + 1)
+            # Live tuning (only in legacy mode)
+            if not use_plugin_system:
+                if key == ord('['):
+                    clicker.set_thresholds(pinch_threshold=max(0.005, clicker.pinch_threshold - 0.005))
+                if key == ord(']'):
+                    clicker.set_thresholds(pinch_threshold=min(0.200, clicker.pinch_threshold + 0.005))
+                if key == ord('-'):
+                    smoothing = max(1, smoothing - 1)
+                if key == ord('=') or key == ord('+'):
+                    smoothing = min(32, smoothing + 1)
 
     except Exception as e:
         log.exception("Unhandled exception: %s", e)
     finally:
         # Safe cleanup
         try:
+            plugin_manager.cleanup()
+            
+            # Legacy cleanup
             if is_gas_pressed:
                 keyboard.release(GAS_KEY)
             if is_brake_pressed:

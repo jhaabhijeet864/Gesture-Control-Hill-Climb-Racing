@@ -1,0 +1,69 @@
+name: gaming_advanced
+description: Advanced gaming profile with complex gesture combinations
+target_application: General Gaming
+version: "1.1"
+settings:
+  smoothing: 6
+  confidence_threshold: 0.75
+  gesture_cooldown: 0.05
+  enable_combinations: true
+  
+mappings:
+  # WASD movement
+  - gesture: point_left
+    action_type: key
+    action_params:
+      key: w
+      press_type: hold
+    conditions:
+      confidence: 0.7
+      hand: left
+      
+  - gesture: fist_left  
+    action_type: key
+    action_params:
+      key: s
+      press_type: hold
+    conditions:
+      confidence: 0.8
+      hand: left
+      
+  # Actions with right hand
+  - gesture: pinch_thumb_index_right
+    action_type: mouse
+    action_params:
+      action: click
+      button: left
+    conditions:
+      confidence: 0.75
+      hand: right
+      
+  - gesture: pinch_thumb_middle_right
+    action_type: mouse  
+    action_params:
+      action: click
+      button: right
+    conditions:
+      confidence: 0.75
+      hand: right
+      
+  # Special combo: both fists = jump
+  - gesture: fist_right
+    action_type: key
+    action_params:
+      key: space
+      press_type: tap
+      duration: 0.1
+    conditions:
+      confidence: 0.85
+      hand: right
+      
+  # Reload gesture sequence
+  - gesture: point_right
+    action_type: key
+    action_params:
+      key: r
+      press_type: tap
+    conditions:
+      confidence: 0.8
+      hand: right

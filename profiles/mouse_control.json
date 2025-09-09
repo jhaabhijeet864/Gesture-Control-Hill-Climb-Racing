@@ -1,0 +1,84 @@
+{
+  "name": "mouse_control",
+  "description": "General mouse and cursor control with gestures",
+  "target_application": "Desktop",
+  "version": "1.0",
+  "settings": {
+    "cursor_smoothing": 5,
+    "click_threshold": 0.05,
+    "scroll_sensitivity": 3,
+    "click_cooldown": 0.2
+  },
+  "mappings": [
+    {
+      "gesture": "point_left",
+      "action_type": "mouse",
+      "action_params": {
+        "action": "move",
+        "hand": "left",
+        "relative": false
+      },
+      "conditions": {
+        "confidence": 0.6,
+        "hand": "left"
+      }
+    },
+    {
+      "gesture": "pinch_thumb_index_left",
+      "action_type": "mouse",
+      "action_params": {
+        "action": "click",
+        "button": "left"
+      },
+      "conditions": {
+        "confidence": 0.7,
+        "hand": "left"
+      }
+    },
+    {
+      "gesture": "pinch_thumb_middle_left",
+      "action_type": "mouse",
+      "action_params": {
+        "action": "click",
+        "button": "right"
+      },
+      "conditions": {
+        "confidence": 0.7,
+        "hand": "left"
+      }
+    },
+    {
+      "gesture": "fist_right",
+      "action_type": "sequence",
+      "action_params": {
+        "sequence": [
+          {
+            "type": "key",
+            "params": {
+              "key": "ctrl",
+              "press_type": "hold"
+            }
+          },
+          {
+            "type": "key", 
+            "params": {
+              "key": "c",
+              "press_type": "tap"
+            }
+          },
+          {
+            "type": "key",
+            "params": {
+              "key": "ctrl",
+              "press_type": "release"
+            }
+          }
+        ]
+      },
+      "conditions": {
+        "confidence": 0.85,
+        "hand": "right"
+      }
+    }
+  ]
+}
