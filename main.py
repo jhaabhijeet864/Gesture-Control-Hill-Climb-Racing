@@ -11,7 +11,7 @@ from gestures import is_fist, ClickDetector
 from config_utils import load_config, save_config, key_from_name, CONFIG_PATH
 from capture import VideoCapture
 from inference import HandInference
-from overlay import draw_hud, draw_status, draw_calibration_panel
+from overlay import draw_hud, draw_status, draw_calibration_panel, ModernOverlay
 from plugins.plugin_manager import PluginManager
 
 
@@ -88,11 +88,15 @@ def main():
     # Plugin system mode toggle
     use_plugin_system = True
     
+    # Initialize modern overlay
+    modern_overlay = ModernOverlay()
+    show_hud = True  # Toggle HUD visibility
+    
     # Show plugin system status
     status = plugin_manager.get_status()
     log.info(f"Plugin System Status: {status}")
 
-    log.info("Starting capture. Press 'q' to quit, 'm' to toggle mode, 'c' to calibrate, 'p' to toggle plugin system.")
+    log.info("Starting capture. Press 'q' to quit, 'm' to toggle mode, 'c' to calibrate, 'p' to toggle plugin system, 'h' to toggle HUD.")
     
     try:
         while True:
@@ -115,15 +119,23 @@ def main():
             fps = 0.9 * fps + 0.1 * inst if fps > 0 else inst
             last_time = now
 
-            # UI overlay - HUD
-            mode_indicator = "PLUGIN" if use_plugin_system else ("GAME" if game_mode else "CURSOR")
-            mode_text = f"{mode_indicator} MODE"
-            mode_color = (0, 255, 255) if use_plugin_system else ((0, 0, 255) if game_mode else (0, 255, 0))
-            draw_hud(frame, mode_text, mode_color, fps, clicker.pinch_threshold, smoothing)
+            # UI overlay - Modern HUD
+            if show_hud:
+                mode_indicator = "PLUGIN" if use_plugin_system else ("GAME" if game_mode else "CURSOR")
+                mode_text = f"{mode_indicator} MODE"
+                mode_color = (0, 255, 255) if use_plugin_system else ((0, 0, 255) if game_mode else (0, 255, 0))
+                
+                # Use modern overlay system
+                modern_overlay.draw_main_hud(frame, mode_text, mode_color, fps, 
+                                           clicker.pinch_threshold if not use_plugin_system else None,
+                                           smoothing if not use_plugin_system else None, 
+                                           plugin_mode=use_plugin_system)
 
             # Tracking - hand assignment
             left_hand = None
             right_hand = None
+            detected_gestures = []
+            active_actions = []
 
             if results.multi_hand_landmarks:
                 for idx, lm in enumerate(results.multi_hand_landmarks):
@@ -138,7 +150,17 @@ def main():
                     else:
                         left_hand = lm
                     
+                    # Enhanced landmark visualization
                     if config.get_config("ui.show_landmarks", True):
+                        # Convert landmarks to list format for enhanced drawing
+                        landmarks_list = []
+                        for landmark in lm.landmark:
+                            landmarks_list.append([landmark.x, landmark.y, landmark.z])
+                        
+                        modern_overlay.draw_hand_landmarks_enhanced(frame, landmarks_list, 
+                                                                  hand_type=label)
+                    else:
+                        # Fallback to simple drawing
                         infer.draw(frame, lm)
 
             status_text = ""
@@ -152,16 +174,30 @@ def main():
                     # Execute actions based on detected gestures
                     execution_results = plugin_manager.execute_gestures(gesture_results)
                     
-                    # Update status text with plugin results
-                    active_gestures = []
+                    # Collect gesture data for visualization
+                    for gesture in gesture_results:
+                        gesture_info = {
+                            'name': gesture.name,
+                            'confidence': gesture.confidence,
+                            'hand': gesture.hand,
+                            'features': getattr(gesture, 'features', {})
+                        }
+                        detected_gestures.append(gesture_info)
+                        
+                        # Add to overlay history for trail effect
+                        modern_overlay.add_gesture_to_history(gesture.name, gesture.confidence)
+                    
+                    # Collect active actions for display
                     for gesture_name, result in execution_results.items():
                         if result.get("success", False):
                             action_type = result.get("action_type", "")
-                            confidence = result.get("confidence", 0)
-                            active_gestures.append(f"{gesture_name.replace('_left', '').replace('_right', '')} ({confidence:.2f})")
+                            action_desc = f"{action_type}: {result.get('action_params', {}).get('key', 'unknown')}"
+                            active_actions.append(action_desc)
                     
-                    if active_gestures:
-                        status_text = " | ".join(active_gestures)
+                    # Set status text based on detected gestures
+                    if detected_gestures:
+                        active_gesture_names = [g['name'] for g in detected_gestures if g['confidence'] > 0.5]
+                        status_text = " | ".join(active_gesture_names) if active_gesture_names else ""
                     
                     # Check for profile updates
                     updated_profiles = plugin_manager.reload_profiles()
@@ -238,15 +274,23 @@ def main():
                     cv2.putText(frame, f"closed={calib_closed} open={calib_open}", (20, 275), 
                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 220, 180), 1)
 
-            # UI overlay - status
-            draw_status(frame, status_text, frame_height)
+            # UI overlay - Modern gesture status display
+            if show_hud and (detected_gestures or active_actions):
+                modern_overlay.draw_gesture_status(frame, detected_gestures, active_actions)
+            
+            # UI overlay - Legacy status (fallback)
+            if not show_hud or (not detected_gestures and not active_actions):
+                draw_status(frame, status_text, frame_height)
             
             # Show current profile in plugin mode
-            if use_plugin_system:
+            if use_plugin_system and show_hud:
                 active_profile = plugin_manager.profile_manager.get_active_profile()
                 if active_profile:
-                    cv2.putText(frame, f"Profile: {active_profile.name}", (10, frame_height - 60), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                    # Use modern text display
+                    modern_overlay.draw_text_with_background(
+                        frame, f"Profile: {active_profile.name}", 
+                        (10, frame_height - 60), modern_overlay.font_medium, 0.6,
+                        modern_overlay.colors['white'], modern_overlay.colors['dark_bg'])
 
             cv2.imshow("Game Glide - Hand Gesture Control", frame)
 
@@ -281,6 +325,10 @@ def main():
                     if clicker.is_right_clicking:
                         mouse.release(Button.right)
                         clicker.is_right_clicking = False
+            
+            if key == ord('h'):
+                show_hud = not show_hud
+                log.info("HUD %s", "Visible" if show_hud else "Hidden")
             
             if key == ord('c'):
                 calibration_mode = not calibration_mode
